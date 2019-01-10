@@ -11,30 +11,73 @@
 // regarding copyright ownership.
 //
 // -----------------------------------------------------------------------------
-#ifndef SUBSTANCE_INITIALIZER_H_
-#define SUBSTANCE_INITIALIZER_H_
+
+#ifndef INTEGRATION_SUBSTANCE_INITIALIZATION_H_
+#define INTEGRATION_SUBSTANCE_INITIALIZATION_H_
+
+#include <vector>
 
 #include "biodynamo.h"
+#include "substance_initializers.h"
 
 namespace bdm {
 
-// Define compile time parameter
-BDM_CTPARAM() { BDM_CTPARAM_HEADER(); };
+// -----------------------------------------------------------------------------
+// In this integration test we should how to make use of the 'substance
+// initializers', in order to initialize the concentration of a particular
+// substance. We create a gaussian distribution along each axis.
+// -----------------------------------------------------------------------------
 
-inline int Simulate(int argc, const char** argv) {
-  Simulation<> simulation(argc, argv);
+// 1. Create list of substances
+    enum Substances { kSubstance };
 
-  // Define initial model - in this example: single cell at origin
-  auto* rm = simulation.GetResourceManager();
-  auto&& cell = rm->New<Cell>(30);
+// 2. Use default compile-time parameters to let the compiler know we are not
+// using any new biology modules or cell types
+    BDM_CTPARAM() { BDM_CTPARAM_HEADER(); };
 
-  // Run simulation for one timestep
-  simulation.GetScheduler()->Simulate(1);
+    inline int Simulate(int argc, const char** argv) {
+      auto set_param = [](auto* param) {
+          // Create an artificial bounds for the simulation space
+          param->bound_space_ = true;
+          param->min_bound_ = -100;
+          param->max_bound_ = 100;
+      };
 
-  std::cout << "Simulation completed successfully!" << std::endl;
-  return 0;
-}
+      Simulation<> simulation(argc, argv, set_param);
+      auto* param = simulation.GetParam();
+
+      // 3. Define initial model
+      // Create one cell at a random position
+      auto construct = [](const std::array<double, 3>& position) {
+          Cell cell(position);
+          cell.SetDiameter(10);
+          return cell;
+      };
+      ModelInitializer::CreateCellsRandom(param->min_bound_, param->max_bound_, 1,
+                                          construct);
+
+      // 3. Define the substances in our simulation
+      // Order: substance id, substance_name, diffusion_coefficient, decay_constant,
+      // resolution
+      ModelInitializer::DefineSubstance(kSubstance, "Substance", 0.5, 0, 20);
+
+      // Order: substance id, substance name, initialization model, along which axis
+      // (0 = x, 1 = y, 2 = z). See the documentation of `GaussianBand` for
+      // information about its arguments
+//      ModelInitializer::InitializeSubstance(kSubstance, "Substance",
+//                                            GaussianBand(0, 5, Axis::kXAxis));
+//      ModelInitializer::InitializeSubstance(kSubstance, "Substance",
+//                                            GaussianBand(0, 5, Axis::kYAxis));
+      ModelInitializer::InitializeSubstance(kSubstance, "Substance",
+                                            GaussianBand(0, 5, Axis::kZAxis));
+
+      // 4. Run simulation for N timesteps
+      simulation.GetScheduler()->Simulate(20);
+
+      std::cout << "Simulation completed successfully!\n";
+      return 0;
+    }
 
 }  // namespace bdm
 
-#endif  // SUBSTANCE_INITIALIZER_H_
+#endif  // INTEGRATION_SUBSTANCE_INITIALIZATION_H_
