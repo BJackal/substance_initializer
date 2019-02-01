@@ -65,7 +65,7 @@ struct LinearConcentration {
         axis_ = axis;
 
         // compute slope of the linear function
-        slope_ = (endpos_ - startpos_) / (endvalue_ - startvalue_);
+        slope_ = (endvalue_ - startvalue_) / (endpos_ - startpos_);
         // and its intercept
         intercept_ = startvalue_ - (slope_ * startpos_);
     }

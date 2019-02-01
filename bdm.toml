@@ -2,10 +2,10 @@
 export = true
 export_interval = 10
 
-   [[visualize_sim_object]]
-   name = "Cell"
-   additional_data_members = [ "diameter_" ]
+ [[visualize_sim_object]]
+ name = "Cell"
+ additional_data_members = [ "diameter_" ]
 
-   [[visualize_diffusion]]
-   name = "Substance"
-   gradient = true
+ [[visualize_diffusion]]
+ name = "Substance"
+ gradient = true
