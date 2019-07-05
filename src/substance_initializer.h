@@ -99,6 +99,9 @@ struct LinearConcentration {
 enum Substances { kSubstance };
 
 // Define displacement behavior:
+
+const double concentrationThreshold = 50;  // stop ovement a this concentraion
+
 // Cells move along the diffusion gradient (from low concentration to high)
 struct MoveAlongGradient : public BaseBiologyModule {
         BDM_STATELESS_BM_HEADER(MoveAlongGradient, BaseBiologyModule, 1);
@@ -114,14 +117,24 @@ struct MoveAlongGradient : public BaseBiologyModule {
             kDg->SetConcentrationThreshold(1e15);
 
             if (auto* cell = dynamic_cast<Cell*>(so)) {
-                const auto& position = so->GetPosition();
-                Double3 gradient;
-                kDg->GetGradient(position, &gradient);
-                gradient[0] *= 0.5;
-                gradient[1] *= 0.5;
-                gradient[2] *= 0.5;
 
-                cell->UpdatePosition(gradient);
+                const auto& current_position = so->GetPosition();  // get current cell postion
+
+                double current_concentration;  // get concentraion at current cell position
+                current_concentration = kDg->GetConcentration(current_position);
+
+                if (current_concentration < concentrationThreshold) {
+                    Double3 gradient;
+                    kDg->GetGradient(current_position, &gradient);
+
+                    gradient[0] *= 0.5;
+                    gradient[1] *= 0.5;
+                    gradient[2] *= 0.5;
+
+                    cell->UpdatePosition(gradient);
+                } else {
+                    std::cout <<  "Concentraion " <<  current_concentration << " to high. Stopped migration!\n";
+                }
             }
         }
     };
