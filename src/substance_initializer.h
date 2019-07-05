@@ -95,8 +95,38 @@ struct LinearConcentration {
 // substance. We create a gaussian distribution along each axis.
 // -----------------------------------------------------------------------------
 
-// 1. Create list of substances
+// Create list of substances
 enum Substances { kSubstance };
+
+// Define displacement behavior:
+// Cells move along the diffusion gradient (from low concentration to high)
+struct MoveAlongGradient : public BaseBiologyModule {
+        BDM_STATELESS_BM_HEADER(MoveAlongGradient, BaseBiologyModule, 1);
+
+    public:
+        MoveAlongGradient() : BaseBiologyModule(gAllEventIds) {}
+
+        void Run(SimObject* so) override {
+            auto* sim = Simulation::GetActive();
+            auto* rm = sim->GetResourceManager();
+            static auto* kDg = rm->GetDiffusionGrid(kSubstance);
+
+            kDg->SetConcentrationThreshold(1e15);
+
+            if (auto* cell = dynamic_cast<Cell*>(so)) {
+                const auto& position = so->GetPosition();
+                Double3 gradient;
+                kDg->GetGradient(position, &gradient);
+                gradient[0] *= 0.5;
+                gradient[1] *= 0.5;
+                gradient[2] *= 0.5;
+
+                cell->UpdatePosition(gradient);
+            }
+        }
+    };
+
+
 
 inline int Simulate(int argc, const char** argv) {
 
@@ -131,6 +161,7 @@ inline int Simulate(int argc, const char** argv) {
         Cell* cell = new Cell({x_coord, y_coord, z_coord});
         // set cell parameters
         cell->SetDiameter(default_cell_diameter);
+        cell->AddBiologyModule(new MoveAlongGradient());
         rm->push_back(cell);  // put the created cell in our cells structure
     }
 
