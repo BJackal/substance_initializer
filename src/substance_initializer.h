@@ -18,7 +18,9 @@
 #include <vector>
 
 #include "biodynamo.h"
-#include "substance_initializers.h"
+#include "core/substance_initializers.h"
+//#include "diffusion_biology_modules.h"
+
 
 // setup simulation parameters
 // set numer of simulation steps
@@ -96,10 +98,6 @@ struct LinearConcentration {
 // 1. Create list of substances
 enum Substances { kSubstance };
 
-// 2. Use default compile-time parameters to let the compiler know we are not
-// using any new biology modules or cell types
-BDM_CTPARAM() { BDM_CTPARAM_HEADER(); };
-
 inline int Simulate(int argc, const char** argv) {
 
     // set space parameters of the simulation
@@ -107,10 +105,10 @@ inline int Simulate(int argc, const char** argv) {
         param->bound_space_ = true;
         param->min_bound_ = -(simulation_cube_dim/2);
         param->max_bound_ = (simulation_cube_dim/2);  // cube of 4500*4500*4500
-        param->run_mechanical_interactions_ = true;
+        // param->run_mechanical_interactions_ = true; tru by default
     };
 
-    Simulation<> simulation(argc, argv, set_param);
+    Simulation simulation(argc, argv, set_param);
     auto* rm = simulation.GetResourceManager();  // get pointer to resource manager
     auto* random = simulation.GetRandom();  // get thread of local random number generator.
 
@@ -122,12 +120,6 @@ inline int Simulate(int argc, const char** argv) {
     double y_min = 0 - (y_range/2);
     double y_max = 0 + (y_range/2);
 
-    // create a structure to contain cells
-    auto* cells = rm->template Get<Cell>();
-    // allocate the correct number of cell in our cells structure before
-    // cell creation
-    cells->reserve(num_precursor_cells);
-
     // create 2d Layer of cells
     for (size_t i = 0; i < num_precursor_cells; ++i) {
         // create coordinates for cells in 2D plate
@@ -136,13 +128,11 @@ inline int Simulate(int argc, const char** argv) {
         z_coord = z_pos_precursor;
 
         // creating the cell at position x, y, z
-        Cell cell({x_coord, y_coord, z_coord});
+        Cell* cell = new Cell({x_coord, y_coord, z_coord});
         // set cell parameters
-        cell.SetDiameter(default_cell_diameter);
-        cells->push_back(cell);  // put the created cell in our cells structure
+        cell->SetDiameter(default_cell_diameter);
+        rm->push_back(cell);  // put the created cell in our cells structure
     }
-
-    cells->Commit();  // commit cells
 
     // 3. Define the substances in our simulation
     // Order: substance id, substance_name, diffusion_coefficient, decay_constant,

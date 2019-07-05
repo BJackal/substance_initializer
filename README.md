@@ -10,5 +10,5 @@ The linear concentration results in a constant gradient along the axis.
 
 ## Version
 ```
-BioDynaMo v0.1.0-135-g39a8687
+BioDynaMo v0.1.0-374-g59d6ef77
 ```
